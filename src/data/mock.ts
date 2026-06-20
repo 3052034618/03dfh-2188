@@ -95,6 +95,17 @@ export const mockTrips: Trip[] = [
     latePolicy: '迟到15分钟内正常开本，超过15分钟押金不退；迟到30分钟以上取消名额且不退费。',
     dm: mockDM,
     players: mockPlayers.slice(0, 4),
+    notifications: [
+      {
+        id: 'n001',
+        type: 'reminder',
+        typeName: '集合提醒',
+        content: '【《午夜铃响》】集合提醒\n时间：1月20日 周六 19:00\n地点：推理之门剧本杀馆（南京西路店）\n请提前15分钟到达，不要迟到哦～',
+        sentAt: '2024-01-19 18:00',
+        recipientCount: 2,
+        recipients: ['小林同学', '剧本杀手']
+      }
+    ],
     status: 'recruiting',
     createdAt: '2024-01-15 09:00',
     shareCode: 'DM2024'
@@ -121,6 +132,7 @@ export const mockTrips: Trip[] = [
     latePolicy: '情感本迟到会影响沉浸体验，请务必准时到达。迟到20分钟以上取消名额。',
     dm: mockDM,
     players: [],
+    notifications: [],
     status: 'recruiting',
     createdAt: '2024-01-16 10:00',
     shareCode: 'SPRING'
@@ -182,6 +194,7 @@ export const mockTrips: Trip[] = [
         applyTime: '2024-01-15 08:00'
       }
     ],
+    notifications: [],
     status: 'full',
     createdAt: '2024-01-14 18:00',
     shareCode: 'GAME2024'

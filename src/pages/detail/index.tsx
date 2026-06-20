@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, Image, Button, Input, Textarea, ScrollView } from '@tarojs/components';
-import Taro, { useRouter } from '@tarojs/taro';
+import Taro, { useRouter, useDidShow } from '@tarojs/taro';
 import classnames from 'classnames';
 import InvitationCard from '@/components/InvitationCard';
 import Tag from '@/components/Tag';
 import { useTripStore } from '@/store/tripStore';
 import { mockReviews } from '@/data/mock';
-import { formatDate } from '@/utils';
-import type { Trip, TimeSlot, ApplyForm } from '@/types';
+import { formatDate, generateShareContent } from '@/utils';
+import type { Trip, ApplyForm } from '@/types';
 import styles from './index.module.scss';
 
 const DetailPage: React.FC = () => {
   const router = useRouter();
-  const { getTripById, addPlayer } = useTripStore();
+  const { getTripById, addPlayer, refreshTrips } = useTripStore();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [selectedSlotIndex, setSelectedSlotIndex] = useState(0);
@@ -26,9 +26,10 @@ const DetailPage: React.FC = () => {
     note: ''
   });
 
-  useEffect(() => {
+  const loadTrip = () => {
     const tripId = router.params.id;
     if (tripId) {
+      refreshTrips();
       const foundTrip = getTripById(tripId);
       if (foundTrip) {
         setTrip(foundTrip);
@@ -37,7 +38,16 @@ const DetailPage: React.FC = () => {
         Taro.showToast({ title: '行程不存在', icon: 'none' });
       }
     }
-  }, [router.params.id, getTripById]);
+  };
+
+  useEffect(() => {
+    loadTrip();
+  }, [router.params.id]);
+
+  useDidShow(() => {
+    console.log('[DetailPage] 页面显示，刷新数据');
+    loadTrip();
+  });
 
   const confirmedCount = useMemo(() => {
     return trip?.players.filter(p => p.status === 'confirmed').length || 0;
@@ -72,7 +82,7 @@ const DetailPage: React.FC = () => {
       return;
     }
 
-    addPlayer(trip.id, {
+    const updatedTrip = addPlayer(trip.id, {
       name: applyForm.name,
       avatar: 'https://picsum.photos/id/64/200/200',
       gender: applyForm.gender,
@@ -82,15 +92,14 @@ const DetailPage: React.FC = () => {
       note: applyForm.note
     });
 
-    console.log('[DetailPage] 提交报名:', applyForm);
+    console.log('[DetailPage] 提交报名:', applyForm.name);
     setShowApplyModal(false);
-    Taro.showToast({ title: '报名成功，等待DM确认', icon: 'success' });
 
-    // 刷新行程数据
-    const updatedTrip = getTripById(trip.id);
     if (updatedTrip) {
       setTrip(updatedTrip);
     }
+
+    Taro.showToast({ title: '报名成功，等待DM确认', icon: 'success' });
   };
 
   const getTagType = (tag: string): 'horror' | 'emotion' | 'mechanism' | 'default' => {
@@ -249,6 +258,25 @@ const DetailPage: React.FC = () => {
           {trip.latePolicy}
         </Text>
       </View>
+
+      {/* 通知记录 */}
+      {trip.notifications && trip.notifications.length > 0 && (
+        <View className={styles.section}>
+          <Text className={styles.sectionTitle}>
+            <Text className={styles.sectionIcon}>📢</Text>
+            DM通知
+          </Text>
+          {trip.notifications.map(notification => (
+            <View key={notification.id} className={styles.noticeCard}>
+              <View className={styles.noticeHeader}>
+                <Text className={styles.noticeType}>{notification.typeName}</Text>
+                <Text className={styles.noticeTime}>{notification.sentAt}</Text>
+              </View>
+              <Text className={styles.noticeContent}>{notification.content}</Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* 玩家评价 */}
       <View className={styles.section}>

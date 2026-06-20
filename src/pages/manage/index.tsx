@@ -1,40 +1,47 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, Image, Button, Textarea, ScrollView } from '@tarojs/components';
-import Taro, { useRouter } from '@tarojs/taro';
+import Taro, { useRouter, useDidShow } from '@tarojs/taro';
 import classnames from 'classnames';
 import Tag from '@/components/Tag';
 import { useTripStore } from '@/store/tripStore';
-import type { Trip, Player, PlayerStatus } from '@/types';
-import { getStatusText, formatDate } from '@/utils';
+import type { Trip, Player, PlayerStatus, NotificationType } from '@/types';
+import { getStatusText, formatDate, generateShareContent, getNotificationTypeName } from '@/utils';
 import styles from './index.module.scss';
 
 type TabType = 'all' | 'pending' | 'confirmed' | 'waitlist';
 
 const ManagePage: React.FC = () => {
   const router = useRouter();
-  const { getTripById, updatePlayerStatus, sendNotification } = useTripStore();
+  const { getTripById, updatePlayerStatus, sendNotification, refreshTrips } = useTripStore();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [showNotifyModal, setShowNotifyModal] = useState(false);
-  const [notifyType, setNotifyType] = useState<'reminder' | 'notes' | 'policy'>('reminder');
+  const [notifyType, setNotifyType] = useState<NotificationType>('reminder');
   const [customMessage, setCustomMessage] = useState('');
+  const [showNotifications, setShowNotifications] = useState(false);
 
-  useEffect(() => {
+  const loadTrip = () => {
     const tripId = router.params.id;
     if (tripId) {
-      loadTrip(tripId);
-    }
-  }, [router.params.id]);
-
-  const loadTrip = (tripId: string) => {
-    const foundTrip = getTripById(tripId);
-    if (foundTrip) {
-      setTrip(foundTrip);
-      console.log('[ManagePage] 加载行程:', tripId);
-    } else {
-      Taro.showToast({ title: '行程不存在', icon: 'none' });
+      refreshTrips();
+      const foundTrip = getTripById(tripId);
+      if (foundTrip) {
+        setTrip(foundTrip);
+        console.log('[ManagePage] 加载行程:', tripId);
+      } else {
+        Taro.showToast({ title: '行程不存在', icon: 'none' });
+      }
     }
   };
+
+  useEffect(() => {
+    loadTrip();
+  }, [router.params.id]);
+
+  useDidShow(() => {
+    console.log('[ManagePage] 页面显示，刷新数据');
+    loadTrip();
+  });
 
   const tabs: { key: TabType; label: string }[] = [
     { key: 'all', label: '全部' },
@@ -61,9 +68,7 @@ const ManagePage: React.FC = () => {
 
   const handleUpdateStatus = (playerId: string, status: PlayerStatus) => {
     if (!trip) return;
-    updatePlayerStatus(trip.id, playerId, status);
-    // 刷新数据
-    const updatedTrip = getTripById(trip.id);
+    const updatedTrip = updatePlayerStatus(trip.id, playerId, status);
     if (updatedTrip) {
       setTrip(updatedTrip);
     }
@@ -75,15 +80,20 @@ const ManagePage: React.FC = () => {
     Taro.showToast({ title: statusText, icon: 'success' });
   };
 
-  const handleSendNotify = (type: 'reminder' | 'notes' | 'policy') => {
+  const handleSendNotify = (type: NotificationType) => {
     setNotifyType(type);
+    setCustomMessage('');
     setShowNotifyModal(true);
   };
 
   const handleConfirmSend = () => {
     if (!trip) return;
-    sendNotification(trip.id, notifyType);
-    console.log('[ManagePage] 发送通知:', { type: notifyType, message: customMessage });
+    const content = customMessage || getDefaultMessage();
+    const updatedTrip = sendNotification(trip.id, notifyType, content);
+    if (updatedTrip) {
+      setTrip(updatedTrip);
+    }
+    console.log('[ManagePage] 发送通知:', { type: notifyType, content });
     setShowNotifyModal(false);
     setCustomMessage('');
     Taro.showToast({ title: '通知已发送', icon: 'success' });
@@ -91,12 +101,18 @@ const ManagePage: React.FC = () => {
 
   const handleShare = () => {
     if (!trip) return;
-    console.log('[ManagePage] 分享邀约:', trip.id);
-    Taro.showToast({ title: '分享功能开发中', icon: 'none' });
+    const shareData = generateShareContent(trip, 'group');
+    Taro.setClipboardData({
+      data: shareData.content,
+      success: () => {
+        Taro.showToast({ title: '邀约文案已复制', icon: 'success' });
+      }
+    });
   };
 
   const handleRefresh = () => {
     console.log('[ManagePage] 下拉刷新');
+    loadTrip();
     setTimeout(() => {
       Taro.stopPullDownRefresh();
     }, 500);
@@ -112,16 +128,16 @@ const ManagePage: React.FC = () => {
     return map[status] || '';
   };
 
-  const notifyOptions = [
-    { type: 'reminder' as const, icon: '📍', title: '集合提醒', desc: '发送集合时间地点提醒' },
-    { type: 'notes' as const, icon: '📝', title: '开本前注意事项', desc: '发送开本前的准备事项' },
-    { type: 'policy' as const, icon: '⏰', title: '迟到处理规则', desc: '再次强调迟到处理规则' }
+  const notifyOptions: { type: NotificationType; icon: string; title: string; desc: string }[] = [
+    { type: 'reminder', icon: '📍', title: '集合提醒', desc: '发送集合时间地点提醒' },
+    { type: 'notes', icon: '📝', title: '开本前注意事项', desc: '发送开本前的准备事项' },
+    { type: 'policy', icon: '⏰', title: '迟到处理规则', desc: '再次强调迟到处理规则' }
   ];
 
   const getDefaultMessage = () => {
     if (!trip) return '';
     const slot = trip.selectedSlot || trip.timeSlots[0];
-    const messages = {
+    const messages: Record<NotificationType, string> = {
       reminder: `【${trip.scriptName}】集合提醒\n时间：${slot ? formatDate(slot.date) + ' ' + slot.startTime : '待定'}\n地点：${trip.location}\n请提前15分钟到达，不要迟到哦～`,
       notes: `【${trip.scriptName}】开本前注意事项\n${trip.notes}\n有任何问题请随时联系DM～`,
       policy: `【${trip.scriptName}】迟到处理规则\n${trip.latePolicy}\n请大家合理安排时间，准时到达！`
@@ -290,6 +306,13 @@ const ManagePage: React.FC = () => {
           <Text className={styles.notifyBtnText}>注意事项</Text>
         </Button>
         <Button
+          className={styles.notifyBtn}
+          onClick={() => setShowNotifications(true)}
+        >
+          <Text className={styles.notifyBtnIcon}>📋</Text>
+          <Text className={styles.notifyBtnText}>通知记录</Text>
+        </Button>
+        <Button
           className={styles.shareBtn}
           onClick={handleShare}
         >
@@ -339,6 +362,46 @@ const ManagePage: React.FC = () => {
             <Button className={styles.sendBtn} onClick={handleConfirmSend}>
               发送给所有已确认玩家
             </Button>
+          </View>
+        </View>
+      )}
+
+      {/* 通知记录弹窗 */}
+      {showNotifications && (
+        <View className={styles.notifyModal} onClick={() => setShowNotifications(false)}>
+          <View className={styles.notifyContent} onClick={e => e.stopPropagation()}>
+            <View className={styles.notifyHeader}>
+              <Text className={styles.notifyTitle}>通知记录</Text>
+              <View className={styles.notifyClose} onClick={() => setShowNotifications(false)}>
+                ×
+              </View>
+            </View>
+
+            <ScrollView className={styles.notificationList} scrollY>
+              {trip && trip.notifications && trip.notifications.length > 0 ? (
+                trip.notifications.map(notification => (
+                  <View key={notification.id} className={styles.notificationItem}>
+                    <View className={styles.notificationItemHeader}>
+                      <Text className={styles.notificationType}>
+                        {getNotificationTypeName(notification.type)}
+                      </Text>
+                      <Text className={styles.notificationTime}>{notification.sentAt}</Text>
+                    </View>
+                    <Text className={styles.notificationContent}>{notification.content}</Text>
+                    <View className={styles.notificationFooter}>
+                      <Text className={styles.notificationRecipients}>
+                        已发送给 {notification.recipientCount} 位玩家
+                      </Text>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <View className={styles.emptyState}>
+                  <Text className={styles.emptyIcon}>📭</Text>
+                  <Text className={styles.emptyText}>暂无通知记录</Text>
+                </View>
+              )}
+            </ScrollView>
           </View>
         </View>
       )}

@@ -460,3 +460,58 @@
     transform: scale(0.98);
   }
 }
+
+/* 通知记录列表 */
+.notificationList {
+  max-height: 60vh;
+}
+
+.notificationItem {
+  background: $color-bg-hover;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  margin-bottom: $spacing-sm;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.notificationItemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-sm;
+}
+
+.notificationType {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $color-primary;
+  background: $color-primary-soft;
+  padding: 4rpx 16rpx;
+  border-radius: $radius-round;
+}
+
+.notificationTime {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.notificationContent {
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.notificationFooter {
+  margin-top: $spacing-sm;
+  padding-top: $spacing-sm;
+  border-top: 1rpx solid $color-divider;
+}
+
+.notificationRecipients {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}

@@ -1,18 +1,23 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, Button, ScrollView } from '@tarojs/components';
-import Taro from '@tarojs/taro';
+import Taro, { useDidShow } from '@tarojs/taro';
 import classnames from 'classnames';
 import Tag from '@/components/Tag';
 import { useTripStore } from '@/store/tripStore';
-import { formatDate, getTagColor } from '@/utils';
+import { formatDate } from '@/utils';
 import type { Trip } from '@/types';
 import styles from './index.module.scss';
 
 type TabType = 'all' | 'recruiting' | 'full' | 'finished';
 
 const TripsPage: React.FC = () => {
-  const { trips } = useTripStore();
+  const { trips, refreshTrips } = useTripStore();
   const [activeTab, setActiveTab] = useState<TabType>('all');
+
+  useDidShow(() => {
+    console.log('[TripsPage] 页面显示，刷新数据');
+    refreshTrips();
+  });
 
   const tabs: { key: TabType; label: string }[] = [
     { key: 'all', label: '全部' },
@@ -74,6 +79,7 @@ const TripsPage: React.FC = () => {
 
   const handleRefresh = () => {
     console.log('[TripsPage] 下拉刷新');
+    refreshTrips();
     setTimeout(() => {
       Taro.stopPullDownRefresh();
     }, 500);

@@ -2,6 +2,8 @@ export type ScriptTag = '恐怖' | '情感' | '机制' | '推理' | '欢乐' | '
 
 export type PlayerStatus = 'pending' | 'confirmed' | 'waitlist' | 'rejected';
 
+export type NotificationType = 'reminder' | 'notes' | 'policy';
+
 export interface TimeSlot {
   date: string;
   startTime: string;
@@ -31,6 +33,16 @@ export interface Player {
   note?: string;
 }
 
+export interface NotificationRecord {
+  id: string;
+  type: NotificationType;
+  typeName: string;
+  content: string;
+  sentAt: string;
+  recipientCount: number;
+  recipients: string[];
+}
+
 export interface Trip {
   id: string;
   scriptName: string;
@@ -51,6 +63,7 @@ export interface Trip {
   latePolicy: string;
   dm: DMInfo;
   players: Player[];
+  notifications: NotificationRecord[];
   status: 'recruiting' | 'full' | 'ongoing' | 'finished';
   createdAt: string;
   shareCode: string;

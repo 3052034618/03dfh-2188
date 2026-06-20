@@ -6,7 +6,7 @@ import InvitationCard from '@/components/InvitationCard';
 import { useTripStore } from '@/store/tripStore';
 import type { ScriptTag, TimeSlot, CreateTripForm, Trip } from '@/types';
 import { mockDM } from '@/data/mock';
-import { generateId, generateShareCode } from '@/utils';
+import { generateId, generateShareCode, generateShareContent, getNowTimeString } from '@/utils';
 import styles from './index.module.scss';
 
 const TAG_OPTIONS: ScriptTag[] = ['恐怖', '情感', '机制', '推理', '欢乐', '阵营'];
@@ -97,8 +97,9 @@ const CreatePage: React.FC = () => {
       latePolicy: form.latePolicy || '迟到15分钟以上押金不退。',
       dm: mockDM,
       players: [],
+      notifications: [],
       status: 'recruiting',
-      createdAt: new Date().toISOString(),
+      createdAt: getNowTimeString(),
       shareCode: generateShareCode()
     };
   }, [form]);
@@ -144,9 +145,35 @@ const CreatePage: React.FC = () => {
     }, 1000);
   };
 
-  const handleShare = (type: string) => {
-    console.log('[CreatePage] 分享邀约:', type);
-    Taro.showToast({ title: `${type}分享功能开发中`, icon: 'none' });
+  const handleShare = (type: 'moments' | 'group' | 'plaza') => {
+    const channelMap = {
+      moments: 'moments' as const,
+      group: 'group' as const,
+      plaza: 'plaza' as const
+    };
+    const channel = channelMap[type] || 'group';
+    const shareData = generateShareContent(previewTrip, channel);
+
+    Taro.setClipboardData({
+      data: shareData.content,
+      success: () => {
+        console.log('[CreatePage] 分享文案已复制:', type);
+        const channelNames: Record<string, string> = {
+          moments: '朋友圈',
+          group: '玩家群',
+          plaza: '平台广场'
+        };
+        Taro.showToast({
+          title: `${channelNames[type] || ''}文案已复制`,
+          icon: 'success',
+          duration: 2000
+        });
+      },
+      fail: (err) => {
+        console.error('[CreatePage] 复制失败:', err);
+        Taro.showToast({ title: '复制失败，请重试', icon: 'none' });
+      }
+    });
   };
 
   return (
@@ -404,15 +431,15 @@ const CreatePage: React.FC = () => {
             </View>
             <InvitationCard trip={previewTrip} />
             <View className={styles.shareSection}>
-              <Button className={styles.shareBtn} onClick={() => handleShare('朋友圈')}>
+              <Button className={styles.shareBtn} onClick={() => handleShare('moments')}>
                 <Text className={styles.shareBtnIcon}>🟢</Text>
                 <Text className={styles.shareBtnText}>朋友圈</Text>
               </Button>
-              <Button className={styles.shareBtn} onClick={() => handleShare('玩家群')}>
+              <Button className={styles.shareBtn} onClick={() => handleShare('group')}>
                 <Text className={styles.shareBtnIcon}>💬</Text>
                 <Text className={styles.shareBtnText}>玩家群</Text>
               </Button>
-              <Button className={styles.shareBtn} onClick={() => handleShare('平台')}>
+              <Button className={styles.shareBtn} onClick={() => handleShare('plaza')}>
                 <Text className={styles.shareBtnIcon}>🏪</Text>
                 <Text className={styles.shareBtnText}>平台广场</Text>
               </Button>

@@ -496,3 +496,42 @@
   font-size: $font-size-sm;
   margin-top: $spacing-sm;
 }
+
+.noticeCard {
+  background: $color-bg-soft;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  margin-bottom: $spacing-sm;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.noticeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-sm;
+}
+
+.noticeType {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $color-primary;
+  background: $color-primary-soft;
+  padding: 4rpx 16rpx;
+  border-radius: $radius-round;
+}
+
+.noticeTime {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.noticeContent {
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
