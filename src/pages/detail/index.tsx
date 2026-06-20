@@ -311,6 +311,43 @@ const DetailPage: React.FC = () => {
                     <Text className={styles.noticeTime}>{notification.sentAt}</Text>
                   </View>
                   <Text className={styles.noticeContent}>{notification.content}</Text>
+                  <View className={styles.noticeFooter}>
+                    <View className={styles.noticeRecipientsRow}>
+                      <Text className={styles.noticeRecipientsLabel}>发给：</Text>
+                      <View className={styles.noticeRecipientTags}>
+                        {notification.recipients.map((name, idx) => (
+                          <View
+                            key={idx}
+                            className={styles.noticeRecipientTag}
+                            onClick={() => {
+                              const message = `@${name}\n${notification.content}`;
+                              Taro.setClipboardData({
+                                data: message,
+                                success: () => {
+                                  Taro.showToast({ title: '已复制可直接发送', icon: 'success' });
+                                }
+                              });
+                            }}
+                          >
+                            {name}
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                    <Button
+                      className={styles.noticeRecipientAction}
+                      onClick={() => {
+                        Taro.setClipboardData({
+                          data: notification.content,
+                          success: () => {
+                            Taro.showToast({ title: '内容已复制', icon: 'success' });
+                          }
+                        });
+                      }}
+                    >
+                      📋 复制全部内容
+                    </Button>
+                  </View>
                 </View>
               ))}
             </View>
@@ -344,22 +381,29 @@ const DetailPage: React.FC = () => {
       )}
 
       {/* 底部报名栏 */}
-      <View className={styles.bottomBar}>
-        <View className={styles.priceInfo}>
-          <Text className={styles.priceLabel}>车费</Text>
-          <View>
-            <Text className={styles.priceValue}>¥{trip.price}</Text>
-            <Text className={styles.priceUnit}>/人</Text>
+      {trip ? (
+        <View className={styles.bottomBar}>
+          <View className={styles.priceInfo}>
+            <Text className={styles.priceLabel}>车费</Text>
+            <View>
+              <Text className={styles.priceValue}>¥{trip.price}</Text>
+              <Text className={styles.priceUnit}>/人</Text>
+            </View>
           </View>
+          <Button
+            className={classnames(styles.applyBtn, trip.status === 'full' && styles.disabled)}
+            onClick={handleApply}
+            disabled={trip.status === 'full'}
+          >
+            {trip.status === 'full' ? '已满员' : '立即报名'}
+          </Button>
         </View>
-        <Button
-          className={classnames(styles.applyBtn, trip.status === 'full' && styles.disabled)}
-          onClick={handleApply}
-          disabled={trip.status === 'full'}
-        >
-          {trip.status === 'full' ? '已满员' : '立即报名'}
-        </Button>
-      </View>
+      ) : (
+        <View className={styles.bottomBar}>
+          <View className={styles.skeletonPrice} />
+          <View className={styles.skeletonBtn} />
+        </View>
+      )}
 
       {/* 报名弹窗 */}
       {showApplyModal && (

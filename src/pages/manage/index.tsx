@@ -23,30 +23,40 @@ const ManagePage: React.FC = () => {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [editNote, setEditNote] = useState('');
   const [editStatus, setEditStatus] = useState<PlayerStatus>('pending');
+  const [loadAttempts, setLoadAttempts] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadTrip = useCallback(() => {
     const tripId = router.params.id;
     if (!tripId) return;
 
+    setIsLoading(true);
     refreshTrips();
     const foundTrip = getTripById(tripId);
     if (foundTrip) {
       setTrip(foundTrip);
+      setLoadAttempts(0);
+      setIsLoading(false);
       console.log('[ManagePage] 加载行程成功:', tripId, foundTrip.scriptName);
     } else {
-      console.error('[ManagePage] 未找到行程:', tripId);
-      setTimeout(() => {
-        const retryTrip = getTripById(tripId);
-        if (retryTrip) {
-          setTrip(retryTrip);
-          console.log('[ManagePage] 重试加载行程成功:', tripId);
-        } else {
-          Taro.showToast({ title: '行程不存在', icon: 'none' });
-          setTimeout(() => Taro.navigateBack(), 1500);
-        }
-      }, 100);
+      console.warn('[ManagePage] 未找到行程，尝试重试:', tripId, '尝试次数:', loadAttempts + 1);
+      if (loadAttempts < 5) {
+        setLoadAttempts(prev => prev + 1);
+        setTimeout(() => loadTrip(), 100 * (loadAttempts + 1));
+      } else {
+        setIsLoading(false);
+        Taro.showModal({
+          title: '加载失败',
+          content: '无法找到该车次数据，请返回行程列表重试',
+          showCancel: false,
+          confirmText: '返回',
+          success: () => {
+            Taro.navigateBack();
+          }
+        });
+      }
     }
-  }, [router.params.id, refreshTrips, getTripById]);
+  }, [router.params.id, refreshTrips, getTripById, loadAttempts]);
 
   useEffect(() => {
     loadTrip();
@@ -54,6 +64,7 @@ const ManagePage: React.FC = () => {
 
   useDidShow(() => {
     console.log('[ManagePage] 页面显示，刷新数据');
+    setLoadAttempts(0);
     loadTrip();
   });
 
@@ -228,33 +239,44 @@ const ManagePage: React.FC = () => {
     return messages[notifyType];
   };
 
-  if (!trip) {
-    return (
-      <View className={styles.page}>
-        <Text>加载中...</Text>
-      </View>
-    );
-  }
-
-  const selectedSlot = trip.selectedSlot || trip.timeSlots[0];
+  const selectedSlot = trip ? trip.selectedSlot || trip.timeSlots[0] : null;
 
   return (
     <View className={styles.page}>
       {/* 顶部信息 */}
       <View className={styles.header}>
         <View className={styles.headerTop}>
-          <Text className={styles.scriptName}>{trip.scriptName}</Text>
-          <Button className={styles.editBtn} onClick={handleGoEdit}>
-            ✏️ 编辑
-          </Button>
+          {trip ? (
+            <>
+              <Text className={styles.scriptName}>{trip.scriptName}</Text>
+              <Button className={styles.editBtn} onClick={handleGoEdit}>
+                ✏️ 编辑
+              </Button>
+            </>
+          ) : (
+            <>
+              <View className={styles.skeletonText} style={{ width: '60%', height: '40rpx' }} />
+              <View className={styles.skeletonBtn} style={{ width: '120rpx', height: '56rpx' }} />
+            </>
+          )}
         </View>
-        <Text className={styles.scriptInfo}>
-          {selectedSlot
-            ? `${formatDate(selectedSlot.date)} ${selectedSlot.startTime}`
-            : '多时段可选'}
-        </Text>
-        <Text className={styles.scriptInfo}>{trip.location}</Text>
-        <View className={styles.seatsSummary}>
+        {trip ? (
+          <>
+            <Text className={styles.scriptInfo}>
+              {selectedSlot
+                ? `${formatDate(selectedSlot.date)} ${selectedSlot.startTime}`
+                : '多时段可选'}
+            </Text>
+            <Text className={styles.scriptInfo}>{trip.location}</Text>
+          </>
+        ) : (
+          <>
+            <View className={styles.skeletonText} style={{ width: '70%', height: '28rpx' }} />
+            <View className={styles.skeletonText} style={{ width: '80%', height: '28rpx' }} />
+          </>
+        )}
+        {trip ? (
+          <View className={styles.seatsSummary}>
           <View className={styles.seatsSummaryItem}>
             <Text className={styles.seatsSummaryNum}>{trip.availableSeats}</Text>
             <Text className={styles.seatsSummaryLabel}>剩余座位</Text>
