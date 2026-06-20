@@ -1,0 +1,117 @@
+@use '@/styles/variables.scss' as *;
+
+.playerItem {
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  margin-bottom: $spacing-sm;
+  box-shadow: $shadow-card;
+}
+
+.playerInfo {
+  display: flex;
+  gap: $spacing-md;
+}
+
+.avatar {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: $radius-round;
+  flex-shrink: 0;
+  background: $color-bg-hover;
+}
+
+.infoContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-xs;
+}
+
+.playerName {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  @include text-ellipsis;
+}
+
+.detailRow {
+  margin-bottom: $spacing-xs;
+}
+
+.detailText {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.tagsRow {
+  display: flex;
+  gap: $spacing-xs;
+  flex-wrap: wrap;
+  margin-bottom: $spacing-xs;
+}
+
+.noteText {
+  display: block;
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  font-style: italic;
+  margin-bottom: $spacing-xs;
+  @include text-ellipsis;
+}
+
+.applyTime {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.actionRow {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1rpx solid $color-divider;
+}
+
+.actionBtn {
+  @include button-reset;
+  flex: 1;
+  height: $button-height-sm;
+  border-radius: $radius-button;
+  font-size: $font-size-sm;
+  transition: all $transition-base;
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+}
+
+.btnConfirm {
+  background: $color-success;
+  color: $color-text-white;
+  border: none;
+}
+
+.btnWaitlist {
+  background: $status-pending-bg;
+  color: $status-pending-text;
+  border: none;
+}
+
+.btnReject {
+  background: $color-bg-hover;
+  color: $color-text-secondary;
+  border: none;
+}
+
+.btnSecondary {
+  background: $color-primary-soft;
+  color: $color-primary;
+  border: none;
+}

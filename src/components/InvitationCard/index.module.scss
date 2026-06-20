@@ -1,0 +1,308 @@
+@use '@/styles/variables.scss' as *;
+
+.card {
+  background: linear-gradient(135deg, $color-bg-card 0%, #FAF7FF 100%);
+  border-radius: $radius-xl;
+  padding: $spacing-xl;
+  box-shadow: $shadow-card;
+  border: 2rpx solid $color-primary-soft;
+}
+
+.header {
+  margin-bottom: $spacing-md;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.title {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  @include text-ellipsis;
+}
+
+.tagsRow {
+  display: flex;
+  gap: $spacing-xs;
+  flex-wrap: wrap;
+}
+
+.divider {
+  height: 1rpx;
+  background: $color-divider;
+  margin: $spacing-md 0;
+}
+
+.infoSection {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.infoLabel {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  margin-bottom: 4rpx;
+}
+
+.infoValue {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.infoSub {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  @include text-ellipsis;
+}
+
+.infoRow {
+  display: flex;
+  gap: $spacing-lg;
+}
+
+.infoItemHalf {
+  flex: 1;
+}
+
+.timeSlotContainer {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.timeSlots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.timeSlot {
+  background: $color-primary-soft;
+  border-radius: $radius-sm;
+  padding: $spacing-sm $spacing-md;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 180rpx;
+}
+
+.timeSlotDate {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-primary;
+}
+
+.timeSlotTime {
+  font-size: $font-size-xs;
+  color: $color-primary-light;
+  margin-top: 4rpx;
+}
+
+.footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: $spacing-md;
+}
+
+.priceSection {
+  display: flex;
+  align-items: baseline;
+}
+
+.priceLabel {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  margin-right: $spacing-xs;
+}
+
+.price {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  color: $color-primary;
+}
+
+.priceUnit {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  margin-left: 4rpx;
+}
+
+.seatsSection {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: $spacing-xs;
+}
+
+.seatsText {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.seatsNum {
+  color: $color-primary;
+  font-weight: $font-weight-semibold;
+  font-size: $font-size-md;
+}
+
+.seatsProgress {
+  width: 200rpx;
+  height: 8rpx;
+  background: $color-bg-hover;
+  border-radius: $radius-round;
+  overflow: hidden;
+}
+
+.seatsProgressBar {
+  height: 100%;
+  background: linear-gradient(90deg, $color-primary 0%, $color-primary-light 100%);
+  border-radius: $radius-round;
+  transition: width $transition-base;
+}
+
+.dmSection {
+  display: flex;
+  align-items: center;
+  padding: $spacing-md;
+  background: $color-bg-soft;
+  border-radius: $radius-md;
+  gap: $spacing-md;
+}
+
+.dmAvatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: $radius-round;
+  flex-shrink: 0;
+  border: 4rpx solid $color-bg-card;
+}
+
+.dmInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.dmName {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  @include text-ellipsis;
+}
+
+.dmStats {
+  display: flex;
+  gap: $spacing-md;
+  margin-top: 4rpx;
+}
+
+.dmRating {
+  font-size: $font-size-sm;
+  color: $color-warning;
+  font-weight: $font-weight-medium;
+}
+
+.dmTrips {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.shareCode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $spacing-xs $spacing-md;
+  background: $color-bg-card;
+  border-radius: $radius-sm;
+  border: 2rpx dashed $color-primary;
+}
+
+.shareCodeLabel {
+  font-size: 20rpx;
+  color: $color-text-tertiary;
+}
+
+.shareCodeValue {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
+  color: $color-primary;
+  letter-spacing: 4rpx;
+  font-family: monospace;
+}
+
+.compactCard {
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  box-shadow: $shadow-card;
+  transition: all $transition-base;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.compactHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: $spacing-sm;
+}
+
+.compactTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  flex: 1;
+  @include text-ellipsis;
+}
+
+.compactTags {
+  display: flex;
+  gap: $spacing-xs;
+  flex-shrink: 0;
+  margin-left: $spacing-sm;
+}
+
+.compactInfo {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.compactLocation {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  @include text-ellipsis;
+}
+
+.compactFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: $spacing-xs;
+}
+
+.compactTime {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.compactSeats {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $color-primary;
+}

@@ -1,0 +1,272 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  background: $color-bg-page;
+  padding-bottom: 120rpx;
+}
+
+.header {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 100%);
+  padding: $spacing-xl $page-padding;
+  padding-top: 80rpx;
+  padding-bottom: 100rpx;
+  position: relative;
+}
+
+.profileCard {
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+}
+
+.avatar {
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: $radius-round;
+  border: 6rpx solid rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+  background: $color-bg-card;
+}
+
+.profileInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.dmName {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  color: $color-text-white;
+  margin-bottom: $spacing-xs;
+  @include text-ellipsis;
+}
+
+.dmBio {
+  font-size: $font-size-sm;
+  color: rgba(255, 255, 255, 0.8);
+  @include text-ellipsis-multi(2);
+  line-height: 1.5;
+}
+
+.ratingRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
+}
+
+.ratingStar {
+  color: #FFD700;
+  font-size: $font-size-lg;
+}
+
+.ratingNum {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-white;
+}
+
+.ratingText {
+  font-size: $font-size-sm;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.statsCard {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin: 0 $page-padding;
+  margin-top: -60rpx;
+  box-shadow: $shadow-card;
+  display: flex;
+  position: relative;
+  z-index: 1;
+}
+
+.statItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-xs;
+  border-right: 1rpx solid $color-divider;
+
+  &:last-child {
+    border-right: none;
+  }
+}
+
+.statNum {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  color: $color-primary;
+}
+
+.statLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.tagsSection {
+  padding: $spacing-lg $page-padding;
+}
+
+.sectionTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+}
+
+.tagsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.menuSection {
+  padding: 0 $page-padding;
+  margin-bottom: $spacing-md;
+}
+
+.menuCard {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  box-shadow: $shadow-card;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  padding: $spacing-lg;
+  border-bottom: 1rpx solid $color-divider;
+  transition: background $transition-fast;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:active {
+    background: $color-bg-hover;
+  }
+}
+
+.menuIcon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: $radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  margin-right: $spacing-md;
+  flex-shrink: 0;
+
+  &.purple {
+    background: $color-primary-soft;
+  }
+
+  &.orange {
+    background: $tag-emotion-bg;
+  }
+
+  &.blue {
+    background: $tag-mechanism-bg;
+  }
+
+  &.green {
+    background: $tag-newbie-bg;
+  }
+}
+
+.menuContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.menuTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.menuDesc {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  margin-top: 4rpx;
+}
+
+.menuArrow {
+  color: $color-text-tertiary;
+  font-size: $font-size-lg;
+  flex-shrink: 0;
+}
+
+.reviewsSection {
+  padding: $spacing-lg $page-padding;
+}
+
+.reviewCard {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+}
+
+.reviewHeader {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  margin-bottom: $spacing-sm;
+}
+
+.reviewAvatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: $radius-round;
+  flex-shrink: 0;
+  background: $color-bg-hover;
+}
+
+.reviewInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.reviewName {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  @include text-ellipsis;
+}
+
+.reviewMeta {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-top: 4rpx;
+}
+
+.reviewRating {
+  color: #FFD700;
+  font-size: $font-size-sm;
+  flex-shrink: 0;
+}
+
+.reviewContent {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  line-height: 1.6;
+  margin-bottom: $spacing-sm;
+}
+
+.reviewScript {
+  font-size: $font-size-xs;
+  color: $color-primary;
+  background: $color-primary-soft;
+  padding: 4rpx 12rpx;
+  border-radius: $radius-xs;
+  display: inline-block;
+}

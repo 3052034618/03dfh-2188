@@ -1,0 +1,50 @@
+// ============================================
+// 主题配色变量
+// ============================================
+
+// 品牌主题色：深紫色系（剧本杀神秘氛围）
+$color-primary: #722ED1;
+$color-primary-light: #9254DE;
+$color-primary-dark: #531DAB;
+$color-primary-soft: #F3E8FF;
+
+// 功能色
+$color-success: #00B42A;
+$color-warning: #FF7D00;
+$color-error: #F53F3F;
+$color-info: #165DFF;
+
+// 背景色
+$color-bg-page: #F7F8FA;
+$color-bg-card: #FFFFFF;
+$color-bg-hover: #F2F3F5;
+$color-bg-soft: #F7F2FA;
+
+// 文本色
+$color-text-primary: #1D2129;
+$color-text-secondary: #4E5969;
+$color-text-tertiary: #86909C;
+$color-text-disabled: #C9CDD4;
+$color-text-white: #FFFFFF;
+
+// 边框色
+$color-border: #E5E6EB;
+$color-divider: #F2F3F5;
+
+// 业务相关：剧本题材标签色
+$tag-horror-bg: #FFECE8;
+$tag-horror-text: #F53F3F;
+$tag-emotion-bg: #FFF3E8;
+$tag-emotion-text: #FF7D00;
+$tag-mechanism-bg: #E8F3FF;
+$tag-mechanism-text: #165DFF;
+$tag-newbie-bg: #E8FFEA;
+$tag-newbie-text: #00B42A;
+
+// 业务相关：玩家状态色
+$status-confirmed-bg: #E8FFEA;
+$status-confirmed-text: #00B42A;
+$status-pending-bg: #FFF7E8;
+$status-pending-text: #FF7D00;
+$status-rejected-bg: #F2F3F5;
+$status-rejected-text: #86909C;

@@ -1,0 +1,44 @@
+@use '@/styles/variables.scss' as *;
+
+.section {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-md;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+}
+
+.required {
+  color: $color-error;
+  font-size: $font-size-md;
+  margin-right: $spacing-xs;
+}
+
+.titleText {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.extra {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}

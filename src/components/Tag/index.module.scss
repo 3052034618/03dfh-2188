@@ -1,0 +1,91 @@
+@use '@/styles/variables.scss' as *;
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-xs;
+  white-space: nowrap;
+
+  &.sm {
+    padding: 4rpx 12rpx;
+    .tagText {
+      font-size: $font-size-xs;
+    }
+  }
+
+  &.md {
+    padding: 8rpx 16rpx;
+    .tagText {
+      font-size: $font-size-sm;
+    }
+  }
+
+  &.default {
+    background: $color-bg-hover;
+    .tagText {
+      color: $color-text-secondary;
+    }
+  }
+
+  &.primary {
+    background: $color-primary-soft;
+    .tagText {
+      color: $color-primary;
+    }
+  }
+
+  &.success {
+    background: $status-confirmed-bg;
+    .tagText {
+      color: $status-confirmed-text;
+    }
+  }
+
+  &.warning {
+    background: $status-pending-bg;
+    .tagText {
+      color: $status-pending-text;
+    }
+  }
+
+  &.error {
+    background: $tag-horror-bg;
+    .tagText {
+      color: $tag-horror-text;
+    }
+  }
+
+  &.horror {
+    background: $tag-horror-bg;
+    .tagText {
+      color: $tag-horror-text;
+    }
+  }
+
+  &.emotion {
+    background: $tag-emotion-bg;
+    .tagText {
+      color: $tag-emotion-text;
+    }
+  }
+
+  &.mechanism {
+    background: $tag-mechanism-bg;
+    .tagText {
+      color: $tag-mechanism-text;
+    }
+  }
+
+  &.newbie {
+    background: $tag-newbie-bg;
+    .tagText {
+      color: $tag-newbie-text;
+    }
+  }
+}
+
+.tagText {
+  font-weight: $font-weight-medium;
+  line-height: 1.4;
+}
