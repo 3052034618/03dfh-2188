@@ -12,7 +12,9 @@ interface TripContextType {
   isLoading: boolean;
   refreshTrips: () => void;
   createTrip: (form: CreateTripForm) => Trip;
+  updateTrip: (tripId: string, updates: Partial<Trip>) => Trip | undefined;
   updatePlayerStatus: (tripId: string, playerId: string, status: PlayerStatus) => Trip | undefined;
+  updatePlayer: (tripId: string, playerId: string, updates: Partial<Player>) => Trip | undefined;
   getTripById: (id: string) => Trip | undefined;
   addPlayer: (tripId: string, player: Omit<Player, 'id' | 'status' | 'applyTime'>) => Trip | undefined;
   sendNotification: (tripId: string, type: NotificationType, content: string) => Trip | undefined;
@@ -114,6 +116,60 @@ export const TripProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     saveAndUpdate(newTrips);
     console.log('[TripStore] 创建新车次:', newTrip.id, newTrip.scriptName);
     return newTrip;
+  }, [trips, saveAndUpdate]);
+
+  const updateTrip = useCallback((tripId: string, updates: Partial<Trip>): Trip | undefined => {
+    let updatedTrip: Trip | undefined;
+
+    const newTrips = trips.map(trip => {
+      if (trip.id !== tripId) return trip;
+
+      updatedTrip = {
+        ...trip,
+        ...updates
+      };
+
+      console.log('[TripStore] 更新车次:', tripId, updates);
+      return updatedTrip;
+    });
+
+    saveAndUpdate(newTrips);
+    return updatedTrip;
+  }, [trips, saveAndUpdate]);
+
+  const updatePlayer = useCallback((tripId: string, playerId: string, updates: Partial<Player>): Trip | undefined => {
+    let updatedTrip: Trip | undefined;
+
+    const newTrips = trips.map(trip => {
+      if (trip.id !== tripId) return trip;
+
+      const updatedPlayers = trip.players.map(p =>
+        p.id === playerId ? { ...p, ...updates } : p
+      );
+
+      let finalPlayers = updatedPlayers;
+      let finalStatus = trip.status;
+      let finalAvailableSeats = trip.availableSeats;
+
+      if (updates.status) {
+        const confirmedCount = updatedPlayers.filter(p => p.status === 'confirmed').length;
+        finalAvailableSeats = trip.totalSeats - confirmedCount;
+        finalStatus = (finalAvailableSeats <= 0 ? 'full' : 'recruiting') as Trip['status'];
+      }
+
+      updatedTrip = {
+        ...trip,
+        players: finalPlayers,
+        availableSeats: Math.max(0, finalAvailableSeats),
+        status: finalStatus
+      };
+
+      console.log('[TripStore] 更新玩家信息:', { tripId, playerId, updates });
+      return updatedTrip;
+    });
+
+    saveAndUpdate(newTrips);
+    return updatedTrip;
   }, [trips, saveAndUpdate]);
 
   const updatePlayerStatus = useCallback((tripId: string, playerId: string, status: PlayerStatus): Trip | undefined => {
@@ -228,7 +284,9 @@ export const TripProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       isLoading,
       refreshTrips,
       createTrip,
+      updateTrip,
       updatePlayerStatus,
+      updatePlayer,
       getTripById,
       addPlayer,
       sendNotification,

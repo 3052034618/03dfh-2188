@@ -515,3 +515,431 @@
   font-size: $font-size-xs;
   color: $color-text-tertiary;
 }
+
+/* 顶部编辑按钮 */
+.headerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-xs;
+}
+
+.editBtn {
+  @include button-reset;
+  height: 56rpx;
+  padding: 0 $spacing-md;
+  border-radius: $radius-button;
+  background: rgba(255, 255, 255, 0.2);
+  color: $color-text-white;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+/* 座位摘要 */
+.seatsSummary {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  margin-top: $spacing-md;
+  margin-bottom: $spacing-md;
+}
+
+.seatsSummaryItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.seatsSummaryNum {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-white;
+}
+
+.seatsSummaryLabel {
+  font-size: $font-size-xs;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.seatsSummaryDivider {
+  width: 1rpx;
+  height: 48rpx;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 看板区域 */
+.dashboardSection {
+  margin: 0 $page-padding;
+  margin-bottom: $spacing-md;
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  box-shadow: $shadow-card;
+}
+
+.sectionHeader {
+  margin-bottom: $spacing-sm;
+}
+
+.sectionTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+/* 已确认名单横向滚动 */
+.confirmedScroll {
+  white-space: nowrap;
+}
+
+.confirmedAvatarItem {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: $spacing-md;
+
+  &:last-child {
+    margin-right: 0;
+  }
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.confirmedAvatar {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: $radius-round;
+  border: 4rpx solid $color-success;
+  background: $color-bg-hover;
+}
+
+.confirmedName {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+  margin-top: $spacing-xs;
+  max-width: 88rpx;
+  @include text-ellipsis;
+}
+
+/* 候补顺序列表 */
+.waitlistList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.waitlistItem {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-sm;
+  background: $color-bg-soft;
+  border-radius: $radius-md;
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.waitlistRank {
+  width: 56rpx;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
+  color: $color-warning;
+}
+
+.waitlistAvatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: $radius-round;
+  background: $color-bg-hover;
+}
+
+.waitlistInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.waitlistName {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  @include text-ellipsis;
+}
+
+.waitlistTime {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-top: 4rpx;
+}
+
+.waitlistArrow {
+  font-size: $font-size-xl;
+  color: $color-text-tertiary;
+}
+
+/* 玩家卡片箭头 */
+.playerMain {
+  position: relative;
+}
+
+.playerArrow {
+  font-size: $font-size-xl;
+  color: $color-text-tertiary;
+  margin-left: $spacing-sm;
+  align-self: center;
+}
+
+/* 候补标记 */
+.waitlistBadge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: $radius-round;
+  background: $color-warning;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.waitlistBadgeText {
+  font-size: 20rpx;
+  font-weight: $font-weight-bold;
+  color: $color-text-white;
+}
+
+/* 通知收件人 */
+.notificationRecipientsRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: $spacing-xs;
+}
+
+.notificationRecipientsLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  flex-shrink: 0;
+}
+
+.recipientTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  flex: 1;
+}
+
+.recipientTag {
+  font-size: $font-size-xs;
+  color: $color-primary;
+  background: $color-primary-soft;
+  padding: 4rpx 12rpx;
+  border-radius: $radius-round;
+}
+
+.notificationActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: $spacing-sm;
+}
+
+.notifActionBtn {
+  @include button-reset;
+  height: 56rpx;
+  padding: 0 $spacing-md;
+  border-radius: $radius-button;
+  background: $color-primary-soft;
+  color: $color-primary;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+/* 玩家详情弹窗 */
+.playerModalContent {
+  max-height: 70vh;
+}
+
+.playerModalHeader {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+}
+
+.playerModalAvatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: $radius-round;
+  background: $color-bg-hover;
+}
+
+.playerModalInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.playerModalName {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+}
+
+.playerModalSection {
+  margin-bottom: $spacing-lg;
+}
+
+.playerModalLabel {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-sm;
+  display: block;
+}
+
+.playerModalInfoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-md;
+  background: $color-bg-soft;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+}
+
+.playerModalInfoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.playerModalInfoLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.playerModalInfoValue {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.playerModalNote {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  line-height: 1.6;
+  font-style: italic;
+  background: $color-bg-soft;
+  padding: $spacing-md;
+  border-radius: $radius-md;
+}
+
+.statusOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.statusOption {
+  flex: 1;
+  min-width: 120rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-button;
+  background: $color-bg-hover;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  border: 2rpx solid transparent;
+  transition: all $transition-base;
+
+  &.active {
+    background: $color-primary-soft;
+    color: $color-primary;
+    border-color: $color-primary;
+    font-weight: $font-weight-medium;
+  }
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.playerModalTextarea {
+  width: 100%;
+  min-height: 160rpx;
+  background: $color-bg-hover;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  border: none;
+  box-sizing: border-box;
+  line-height: 1.6;
+}
+
+.playerModalActions {
+  display: flex;
+  gap: $spacing-md;
+  margin-top: $spacing-xl;
+}
+
+.playerModalBtnSecondary {
+  @include button-reset;
+  flex: 1;
+  height: $button-height-lg;
+  border-radius: $radius-button;
+  background: $color-bg-hover;
+  color: $color-text-secondary;
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.playerModalBtnPrimary {
+  @include button-reset;
+  flex: 2;
+  height: $button-height-lg;
+  border-radius: $radius-button;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  color: $color-text-white;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+}
+
+/* 底部操作栏调整 */
+.bottomBar {
+  .notifyBtn {
+    flex: 1;
+  }
+
+  .shareBtn {
+    flex: 1.2;
+  }
+}

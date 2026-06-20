@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { View, Text, Input, Textarea, Button, Switch, ScrollView } from '@tarojs/components';
-import Taro from '@tarojs/taro';
+import Taro, { useRouter, useDidShow } from '@tarojs/taro';
 import classnames from 'classnames';
 import InvitationCard from '@/components/InvitationCard';
 import { useTripStore } from '@/store/tripStore';
@@ -12,8 +12,12 @@ import styles from './index.module.scss';
 const TAG_OPTIONS: ScriptTag[] = ['恐怖', '情感', '机制', '推理', '欢乐', '阵营'];
 
 const CreatePage: React.FC = () => {
-  const { createTrip } = useTripStore();
+  const router = useRouter();
+  const { createTrip, updateTrip, getTripById, refreshTrips } = useTripStore();
   const [showPreview, setShowPreview] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
+  const [editTripId, setEditTripId] = useState<string | null>(null);
+  const [originalTrip, setOriginalTrip] = useState<Trip | null>(null);
 
   const [form, setForm] = useState<CreateTripForm>({
     scriptName: '',
@@ -32,6 +36,53 @@ const CreatePage: React.FC = () => {
     suitableFor: '',
     notes: '',
     latePolicy: ''
+  });
+
+  const loadEditData = useCallback(() => {
+    const tripId = router.params.id;
+    const mode = router.params.mode;
+
+    if (mode === 'edit' && tripId) {
+      refreshTrips();
+      const trip = getTripById(tripId);
+      if (trip) {
+        setIsEdit(true);
+        setEditTripId(tripId);
+        setOriginalTrip(trip);
+        setForm({
+          scriptName: trip.scriptName,
+          city: trip.city,
+          district: trip.district,
+          location: trip.location,
+          totalSeats: trip.totalSeats,
+          duration: trip.duration,
+          tags: trip.tags,
+          newbieFriendly: trip.newbieFriendly,
+          timeSlots: trip.timeSlots.length > 0 ? trip.timeSlots : [
+            { date: '', startTime: '14:00', endTime: '18:00' }
+          ],
+          price: trip.price,
+          feeNote: trip.feeNote,
+          suitableFor: trip.suitableFor,
+          notes: trip.notes,
+          latePolicy: trip.latePolicy
+        });
+        console.log('[CreatePage] 加载编辑数据:', tripId, trip.scriptName);
+      } else {
+        Taro.showToast({ title: '行程不存在', icon: 'none' });
+        setTimeout(() => Taro.navigateBack(), 1500);
+      }
+    }
+  }, [router.params, refreshTrips, getTripById]);
+
+  useEffect(() => {
+    loadEditData();
+  }, [loadEditData]);
+
+  useDidShow(() => {
+    if (router.params.mode === 'edit' && router.params.id) {
+      loadEditData();
+    }
   });
 
   const updateForm = <K extends keyof CreateTripForm>(key: K, value: CreateTripForm[K]) => {
@@ -78,14 +129,14 @@ const CreatePage: React.FC = () => {
   };
 
   const previewTrip = useMemo((): Trip => {
-    return {
-      id: generateId(),
+    const baseTrip: Trip = {
+      id: isEdit && originalTrip ? originalTrip.id : generateId(),
       scriptName: form.scriptName || '剧本名称',
       city: form.city || '城市',
       district: form.district || '商圈',
       location: form.location || '门店/集合点地址',
       totalSeats: form.totalSeats,
-      availableSeats: form.totalSeats,
+      availableSeats: isEdit && originalTrip ? originalTrip.availableSeats : form.totalSeats,
       duration: form.duration || '4小时',
       tags: form.tags.length > 0 ? form.tags : ['推理'],
       newbieFriendly: form.newbieFriendly,
@@ -96,13 +147,14 @@ const CreatePage: React.FC = () => {
       notes: form.notes || '请提前15分钟到店，请勿迟到。',
       latePolicy: form.latePolicy || '迟到15分钟以上押金不退。',
       dm: mockDM,
-      players: [],
-      notifications: [],
-      status: 'recruiting',
-      createdAt: getNowTimeString(),
-      shareCode: generateShareCode()
+      players: isEdit && originalTrip ? originalTrip.players : [],
+      notifications: isEdit && originalTrip ? originalTrip.notifications : [],
+      status: isEdit && originalTrip ? originalTrip.status : 'recruiting',
+      createdAt: isEdit && originalTrip ? originalTrip.createdAt : getNowTimeString(),
+      shareCode: isEdit && originalTrip ? originalTrip.shareCode : generateShareCode()
     };
-  }, [form]);
+    return baseTrip;
+  }, [form, isEdit, originalTrip]);
 
   const handlePreview = () => {
     if (!form.scriptName) {
@@ -131,18 +183,26 @@ const CreatePage: React.FC = () => {
       return;
     }
 
-    const newTrip = createTrip({
+    const validForm: CreateTripForm = {
       ...form,
       timeSlots: validSlots
-    });
+    };
 
-    Taro.showToast({ title: '发车成功！', icon: 'success' });
-
-    setTimeout(() => {
-      Taro.navigateTo({
-        url: `/pages/detail/index?id=${newTrip.id}`
-      });
-    }, 1000);
+    if (isEdit && editTripId) {
+      const updatedTrip = updateTrip(editTripId, validForm);
+      Taro.showToast({ title: '保存成功！', icon: 'success' });
+      setTimeout(() => {
+        Taro.navigateBack();
+      }, 1000);
+    } else {
+      const newTrip = createTrip(validForm);
+      Taro.showToast({ title: '发车成功！', icon: 'success' });
+      setTimeout(() => {
+        Taro.navigateTo({
+          url: `/pages/detail/index?id=${newTrip.id}`
+        });
+      }, 1000);
+    }
   };
 
   const handleShare = (type: 'moments' | 'group' | 'plaza') => {
@@ -179,8 +239,12 @@ const CreatePage: React.FC = () => {
   return (
     <View className={styles.page}>
       <View className={styles.headerSection}>
-        <Text className={styles.headerTitle}>🚗 发一辆车</Text>
-        <Text className={styles.headerSubtitle}>填写信息，一键生成精美邀约卡</Text>
+        <Text className={styles.headerTitle}>
+          {isEdit ? '✏️ 编辑邀约' : '🚗 发一辆车'}
+        </Text>
+        <Text className={styles.headerSubtitle}>
+          {isEdit ? '修改邀约信息，玩家状态不丢失' : '填写信息，一键生成精美邀约卡'}
+        </Text>
       </View>
 
       <ScrollView className={styles.formContainer} scrollY>
@@ -415,7 +479,7 @@ const CreatePage: React.FC = () => {
           预览邀约
         </Button>
         <Button className={styles.submitBtn} onClick={handleSubmit}>
-          立即发车
+          {isEdit ? '保存修改' : '立即发车'}
         </Button>
       </View>
 

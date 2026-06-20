@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, Image, Button, Textarea, ScrollView } from '@tarojs/components';
 import Taro, { useRouter, useDidShow } from '@tarojs/taro';
 import classnames from 'classnames';
@@ -12,27 +12,41 @@ type TabType = 'all' | 'pending' | 'confirmed' | 'waitlist';
 
 const ManagePage: React.FC = () => {
   const router = useRouter();
-  const { getTripById, updatePlayerStatus, sendNotification, refreshTrips } = useTripStore();
+  const { getTripById, updatePlayerStatus, updatePlayer, sendNotification, refreshTrips } = useTripStore();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [showNotifyModal, setShowNotifyModal] = useState(false);
   const [notifyType, setNotifyType] = useState<NotificationType>('reminder');
   const [customMessage, setCustomMessage] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showPlayerModal, setShowPlayerModal] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [editNote, setEditNote] = useState('');
+  const [editStatus, setEditStatus] = useState<PlayerStatus>('pending');
 
-  const loadTrip = () => {
+  const loadTrip = useCallback(() => {
     const tripId = router.params.id;
-    if (tripId) {
-      refreshTrips();
-      const foundTrip = getTripById(tripId);
-      if (foundTrip) {
-        setTrip(foundTrip);
-        console.log('[ManagePage] 加载行程:', tripId);
-      } else {
-        Taro.showToast({ title: '行程不存在', icon: 'none' });
-      }
+    if (!tripId) return;
+
+    refreshTrips();
+    const foundTrip = getTripById(tripId);
+    if (foundTrip) {
+      setTrip(foundTrip);
+      console.log('[ManagePage] 加载行程成功:', tripId, foundTrip.scriptName);
+    } else {
+      console.error('[ManagePage] 未找到行程:', tripId);
+      setTimeout(() => {
+        const retryTrip = getTripById(tripId);
+        if (retryTrip) {
+          setTrip(retryTrip);
+          console.log('[ManagePage] 重试加载行程成功:', tripId);
+        } else {
+          Taro.showToast({ title: '行程不存在', icon: 'none' });
+          setTimeout(() => Taro.navigateBack(), 1500);
+        }
+      }, 100);
     }
-  };
+  }, [router.params.id, refreshTrips, getTripById]);
 
   useEffect(() => {
     loadTrip();
@@ -50,11 +64,34 @@ const ManagePage: React.FC = () => {
     { key: 'waitlist', label: '候补' }
   ];
 
-  const filteredPlayers = useMemo(() => {
+  const sortedPlayers = useMemo(() => {
     if (!trip) return [];
-    if (activeTab === 'all') return trip.players;
-    return trip.players.filter(p => p.status === activeTab);
-  }, [trip, activeTab]);
+    const statusOrder: Record<PlayerStatus, number> = {
+      confirmed: 0,
+      pending: 1,
+      waitlist: 2,
+      rejected: 3
+    };
+    return [...trip.players].sort((a, b) => {
+      if (a.status !== b.status) {
+        return statusOrder[a.status] - statusOrder[b.status];
+      }
+      return new Date(a.applyTime).getTime() - new Date(b.applyTime).getTime();
+    });
+  }, [trip]);
+
+  const filteredPlayers = useMemo(() => {
+    if (activeTab === 'all') return sortedPlayers;
+    return sortedPlayers.filter(p => p.status === activeTab);
+  }, [sortedPlayers, activeTab]);
+
+  const confirmedPlayers = useMemo(() => {
+    return sortedPlayers.filter(p => p.status === 'confirmed');
+  }, [sortedPlayers]);
+
+  const waitlistPlayers = useMemo(() => {
+    return sortedPlayers.filter(p => p.status === 'waitlist');
+  }, [sortedPlayers]);
 
   const stats = useMemo(() => {
     if (!trip) return { total: 0, pending: 0, confirmed: 0, waitlist: 0 };
@@ -110,12 +147,58 @@ const ManagePage: React.FC = () => {
     });
   };
 
+  const handlePlayerClick = (player: Player) => {
+    setSelectedPlayer(player);
+    setEditNote(player.note || '');
+    setEditStatus(player.status);
+    setShowPlayerModal(true);
+  };
+
+  const handleSavePlayer = () => {
+    if (!trip || !selectedPlayer) return;
+    const updatedTrip = updatePlayer(trip.id, selectedPlayer.id, {
+      note: editNote,
+      status: editStatus
+    });
+    if (updatedTrip) {
+      setTrip(updatedTrip);
+    }
+    setShowPlayerModal(false);
+    Taro.showToast({ title: '保存成功', icon: 'success' });
+  };
+
+  const handleCopyNotification = (content: string) => {
+    Taro.setClipboardData({
+      data: content,
+      success: () => {
+        Taro.showToast({ title: '内容已复制', icon: 'success' });
+      }
+    });
+  };
+
+  const handleSendToPlayer = (playerName: string, content: string) => {
+    const message = `@${playerName}\n${content}`;
+    Taro.setClipboardData({
+      data: message,
+      success: () => {
+        Taro.showToast({ title: '已复制可直接发送', icon: 'success' });
+      }
+    });
+  };
+
   const handleRefresh = () => {
     console.log('[ManagePage] 下拉刷新');
     loadTrip();
     setTimeout(() => {
       Taro.stopPullDownRefresh();
     }, 500);
+  };
+
+  const handleGoEdit = () => {
+    if (!trip) return;
+    Taro.navigateTo({
+      url: `/pages/create/index?id=${trip.id}&mode=edit`
+    });
   };
 
   const getStatusClass = (status: string) => {
@@ -159,13 +242,39 @@ const ManagePage: React.FC = () => {
     <View className={styles.page}>
       {/* 顶部信息 */}
       <View className={styles.header}>
-        <Text className={styles.scriptName}>{trip.scriptName}</Text>
+        <View className={styles.headerTop}>
+          <Text className={styles.scriptName}>{trip.scriptName}</Text>
+          <Button className={styles.editBtn} onClick={handleGoEdit}>
+            ✏️ 编辑
+          </Button>
+        </View>
         <Text className={styles.scriptInfo}>
           {selectedSlot
             ? `${formatDate(selectedSlot.date)} ${selectedSlot.startTime}`
             : '多时段可选'}
         </Text>
         <Text className={styles.scriptInfo}>{trip.location}</Text>
+        <View className={styles.seatsSummary}>
+          <View className={styles.seatsSummaryItem}>
+            <Text className={styles.seatsSummaryNum}>{trip.availableSeats}</Text>
+            <Text className={styles.seatsSummaryLabel}>剩余座位</Text>
+          </View>
+          <View className={styles.seatsSummaryDivider} />
+          <View className={styles.seatsSummaryItem}>
+            <Text className={styles.seatsSummaryNum}>{stats.confirmed}</Text>
+            <Text className={styles.seatsSummaryLabel}>已确认</Text>
+          </View>
+          <View className={styles.seatsSummaryDivider} />
+          <View className={styles.seatsSummaryItem}>
+            <Text className={styles.seatsSummaryNum}>{stats.pending}</Text>
+            <Text className={styles.seatsSummaryLabel}>待确认</Text>
+          </View>
+          <View className={styles.seatsSummaryDivider} />
+          <View className={styles.seatsSummaryItem}>
+            <Text className={styles.seatsSummaryNum}>{stats.waitlist}</Text>
+            <Text className={styles.seatsSummaryLabel}>候补</Text>
+          </View>
+        </View>
         <View className={styles.statsRow}>
           <View className={styles.statItem}>
             <Text className={styles.statNum}>{stats.total}</Text>
@@ -184,6 +293,74 @@ const ManagePage: React.FC = () => {
             <Text className={styles.statLabel}>候补</Text>
           </View>
         </View>
+      </View>
+
+      {/* 已确认名单看板 */}
+      {confirmedPlayers.length > 0 && (
+        <View className={styles.dashboardSection}>
+          <View className={styles.sectionHeader}>
+            <Text className={styles.sectionTitle}>✅ 已确认名单</Text>
+          </View>
+          <ScrollView className={styles.confirmedScroll} scrollX>
+            {confirmedPlayers.map(player => (
+              <View
+                key={player.id}
+                className={styles.confirmedAvatarItem}
+                onClick={() => handlePlayerClick(player)}
+              >
+                <Image
+                  className={styles.confirmedAvatar}
+                  src={player.avatar}
+                  mode="aspectFill"
+                />
+                <Text className={styles.confirmedName}>{player.name}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* 候补顺序看板 */}
+      {waitlistPlayers.length > 0 && (
+        <View className={styles.dashboardSection}>
+          <View className={styles.sectionHeader}>
+            <Text className={styles.sectionTitle}>⏳ 候补顺序</Text>
+          </View>
+          <View className={styles.waitlistList}>
+            {waitlistPlayers.map((player, index) => (
+              <View
+                key={player.id}
+                className={styles.waitlistItem}
+                onClick={() => handlePlayerClick(player)}
+              >
+                <Text className={styles.waitlistRank}>#{index + 1}</Text>
+                <Image
+                  className={styles.waitlistAvatar}
+                  src={player.avatar}
+                  mode="aspectFill"
+                />
+                <View className={styles.waitlistInfo}>
+                  <Text className={styles.waitlistName}>{player.name}</Text>
+                  <Text className={styles.waitlistTime}>{player.applyTime}</Text>
+                </View>
+                <Text className={styles.waitlistArrow}>›</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Tab 切换 */}
+      <View className={styles.tabBar}>
+        {tabs.map(tab => (
+          <View
+            key={tab.key}
+            className={classnames(styles.tabItem, activeTab === tab.key && styles.active)}
+            onClick={() => setActiveTab(tab.key)}
+          >
+            {tab.label}
+          </View>
+        ))}
       </View>
 
       {/* Tab 切换 */}
@@ -207,80 +384,96 @@ const ManagePage: React.FC = () => {
         onRefresherRefresh={handleRefresh}
       >
         {filteredPlayers.length > 0 ? (
-          filteredPlayers.map(player => (
-            <View key={player.id} className={styles.playerCard}>
-              <View className={styles.playerMain}>
-                <Image
-                  className={styles.playerAvatar}
-                  src={player.avatar}
-                  mode="aspectFill"
-                />
-                <View className={styles.playerInfo}>
-                  <View className={styles.playerNameRow}>
-                    <Text className={styles.playerName}>{player.name}</Text>
-                    <View className={classnames(styles.statusBadge, getStatusClass(player.status))}>
-                      {getStatusText(player.status)}
+          filteredPlayers.map(player => {
+            const waitlistIndex = player.status === 'waitlist'
+              ? waitlistPlayers.findIndex(p => p.id === player.id) + 1
+              : 0;
+
+            return (
+              <View
+                key={player.id}
+                className={styles.playerCard}
+                onClick={() => handlePlayerClick(player)}
+              >
+                <View className={styles.playerMain}>
+                  {player.status === 'waitlist' && waitlistIndex > 0 && (
+                    <View className={styles.waitlistBadge}>
+                      <Text className={styles.waitlistBadgeText}>#{waitlistIndex}</Text>
                     </View>
-                  </View>
-                  <Text className={styles.playerDetail}>
-                    {player.gender === 'male' ? '♂' : '♀'} · {player.rolePreference}
-                  </Text>
-                  <View className={styles.playerTags}>
-                    {player.carpool && (
-                      <Tag text="可拼车" type="primary" size="sm" />
-                    )}
-                    {player.crossDress && (
-                      <Tag text="可反串" type="default" size="sm" />
-                    )}
-                  </View>
-                  {player.note && (
-                    <Text className={styles.playerNote}>"{player.note}"</Text>
                   )}
-                  <Text className={styles.applyTime}>申请时间：{player.applyTime}</Text>
+                  <Image
+                    className={styles.playerAvatar}
+                    src={player.avatar}
+                    mode="aspectFill"
+                  />
+                  <View className={styles.playerInfo}>
+                    <View className={styles.playerNameRow}>
+                      <Text className={styles.playerName}>{player.name}</Text>
+                      <View className={classnames(styles.statusBadge, getStatusClass(player.status))}>
+                        {getStatusText(player.status)}
+                      </View>
+                    </View>
+                    <Text className={styles.playerDetail}>
+                      {player.gender === 'male' ? '♂' : '♀'} · {player.rolePreference}
+                    </Text>
+                    <View className={styles.playerTags}>
+                      {player.carpool && (
+                        <Tag text="可拼车" type="primary" size="sm" />
+                      )}
+                      {player.crossDress && (
+                        <Tag text="可反串" type="default" size="sm" />
+                      )}
+                    </View>
+                    {player.note && (
+                      <Text className={styles.playerNote}>"{player.note}"</Text>
+                    )}
+                    <Text className={styles.applyTime}>申请时间：{player.applyTime}</Text>
+                  </View>
+                  <Text className={styles.playerArrow}>›</Text>
                 </View>
+
+                {player.status === 'pending' && (
+                  <View className={styles.actionRow} onClick={e => e.stopPropagation()}>
+                    <Button
+                      className={classnames(styles.actionBtn, styles.btnConfirm)}
+                      onClick={(e) => { e.stopPropagation(); handleUpdateStatus(player.id, 'confirmed'); }}
+                    >
+                      确认
+                    </Button>
+                    <Button
+                      className={classnames(styles.actionBtn, styles.btnWaitlist)}
+                      onClick={(e) => { e.stopPropagation(); handleUpdateStatus(player.id, 'waitlist'); }}
+                    >
+                      候补
+                    </Button>
+                    <Button
+                      className={classnames(styles.actionBtn, styles.btnReject)}
+                      onClick={(e) => { e.stopPropagation(); handleUpdateStatus(player.id, 'rejected'); }}
+                    >
+                      婉拒
+                    </Button>
+                  </View>
+                )}
+
+                {player.status !== 'pending' && (
+                  <View className={styles.actionRow} onClick={e => e.stopPropagation()}>
+                    <Button
+                      className={classnames(styles.actionBtn, styles.btnConfirm)}
+                      onClick={(e) => { e.stopPropagation(); handleUpdateStatus(player.id, 'confirmed'); }}
+                    >
+                      设为确认
+                    </Button>
+                    <Button
+                      className={classnames(styles.actionBtn, styles.btnWaitlist)}
+                      onClick={(e) => { e.stopPropagation(); handleUpdateStatus(player.id, 'waitlist'); }}
+                    >
+                      设为候补
+                    </Button>
+                  </View>
+                )}
               </View>
-
-              {player.status === 'pending' && (
-                <View className={styles.actionRow}>
-                  <Button
-                    className={classnames(styles.actionBtn, styles.btnConfirm)}
-                    onClick={() => handleUpdateStatus(player.id, 'confirmed')}
-                  >
-                    确认
-                  </Button>
-                  <Button
-                    className={classnames(styles.actionBtn, styles.btnWaitlist)}
-                    onClick={() => handleUpdateStatus(player.id, 'waitlist')}
-                  >
-                    候补
-                  </Button>
-                  <Button
-                    className={classnames(styles.actionBtn, styles.btnReject)}
-                    onClick={() => handleUpdateStatus(player.id, 'rejected')}
-                  >
-                    婉拒
-                  </Button>
-                </View>
-              )}
-
-              {player.status !== 'pending' && (
-                <View className={styles.actionRow}>
-                  <Button
-                    className={classnames(styles.actionBtn, styles.btnConfirm)}
-                    onClick={() => handleUpdateStatus(player.id, 'confirmed')}
-                  >
-                    设为确认
-                  </Button>
-                  <Button
-                    className={classnames(styles.actionBtn, styles.btnWaitlist)}
-                    onClick={() => handleUpdateStatus(player.id, 'waitlist')}
-                  >
-                    设为候补
-                  </Button>
-                </View>
-              )}
-            </View>
-          ))
+            );
+          })
         ) : (
           <View className={styles.emptyState}>
             <Text className={styles.emptyIcon}>📭</Text>
@@ -389,9 +582,24 @@ const ManagePage: React.FC = () => {
                     </View>
                     <Text className={styles.notificationContent}>{notification.content}</Text>
                     <View className={styles.notificationFooter}>
-                      <Text className={styles.notificationRecipients}>
-                        已发送给 {notification.recipientCount} 位玩家
-                      </Text>
+                      <View className={styles.notificationRecipientsRow}>
+                        <Text className={styles.notificationRecipientsLabel}>收件人：</Text>
+                        <View className={styles.recipientTags}>
+                          {notification.recipients.map((name, idx) => (
+                            <View key={idx} className={styles.recipientTag}>
+                              {name}
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    </View>
+                    <View className={styles.notificationActions}>
+                      <Button
+                        className={styles.notifActionBtn}
+                        onClick={() => handleCopyNotification(notification.content)}
+                      >
+                        📋 复制内容
+                      </Button>
                     </View>
                   </View>
                 ))
@@ -401,6 +609,110 @@ const ManagePage: React.FC = () => {
                   <Text className={styles.emptyText}>暂无通知记录</Text>
                 </View>
               )}
+            </ScrollView>
+          </View>
+        </View>
+      )}
+
+      {/* 玩家详情弹窗 */}
+      {showPlayerModal && selectedPlayer && (
+        <View className={styles.notifyModal} onClick={() => setShowPlayerModal(false)}>
+          <View className={styles.notifyContent} onClick={e => e.stopPropagation()}>
+            <View className={styles.notifyHeader}>
+              <Text className={styles.notifyTitle}>玩家详情</Text>
+              <View className={styles.notifyClose} onClick={() => setShowPlayerModal(false)}>
+                ×
+              </View>
+            </View>
+
+            <ScrollView className={styles.playerModalContent} scrollY>
+              <View className={styles.playerModalHeader}>
+                <Image
+                  className={styles.playerModalAvatar}
+                  src={selectedPlayer.avatar}
+                  mode="aspectFill"
+                />
+                <View className={styles.playerModalInfo}>
+                  <Text className={styles.playerModalName}>{selectedPlayer.name}</Text>
+                  <View className={classnames(styles.statusBadge, getStatusClass(selectedPlayer.status))}>
+                    {getStatusText(selectedPlayer.status)}
+                  </View>
+                </View>
+              </View>
+
+              <View className={styles.playerModalSection}>
+                <Text className={styles.playerModalLabel}>基本信息</Text>
+                <View className={styles.playerModalInfoGrid}>
+                  <View className={styles.playerModalInfoItem}>
+                    <Text className={styles.playerModalInfoLabel}>性别</Text>
+                    <Text className={styles.playerModalInfoValue}>
+                      {selectedPlayer.gender === 'male' ? '男' : '女'}
+                    </Text>
+                  </View>
+                  <View className={styles.playerModalInfoItem}>
+                    <Text className={styles.playerModalInfoLabel}>角色偏好</Text>
+                    <Text className={styles.playerModalInfoValue}>{selectedPlayer.rolePreference}</Text>
+                  </View>
+                  <View className={styles.playerModalInfoItem}>
+                    <Text className={styles.playerModalInfoLabel}>可拼车</Text>
+                    <Text className={styles.playerModalInfoValue}>
+                      {selectedPlayer.carpool ? '是' : '否'}
+                    </Text>
+                  </View>
+                  <View className={styles.playerModalInfoItem}>
+                    <Text className={styles.playerModalInfoLabel}>可反串</Text>
+                    <Text className={styles.playerModalInfoValue}>
+                      {selectedPlayer.crossDress ? '是' : '否'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {selectedPlayer.note && (
+                <View className={styles.playerModalSection}>
+                  <Text className={styles.playerModalLabel}>玩家备注</Text>
+                  <Text className={styles.playerModalNote}>"{selectedPlayer.note}"</Text>
+                </View>
+              )}
+
+              <View className={styles.playerModalSection}>
+                <Text className={styles.playerModalLabel}>调整状态</Text>
+                <View className={styles.statusOptions}>
+                  {(['pending', 'confirmed', 'waitlist', 'rejected'] as PlayerStatus[]).map(status => (
+                    <View
+                      key={status}
+                      className={classnames(styles.statusOption, editStatus === status && styles.active)}
+                      onClick={() => setEditStatus(status)}
+                    >
+                      {getStatusText(status)}
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              <View className={styles.playerModalSection}>
+                <Text className={styles.playerModalLabel}>DM备注</Text>
+                <Textarea
+                  className={styles.playerModalTextarea}
+                  placeholder="添加备注，如角色分配、特殊需求等"
+                  value={editNote}
+                  onInput={e => setEditNote(e.detail.value)}
+                  maxlength={200}
+                  autoHeight
+                />
+              </View>
+
+              <View className={styles.playerModalActions}>
+                <Button
+                  className={styles.playerModalBtnSecondary}
+                  onClick={() => setShowPlayerModal(false)}
+                >
+                  取消
+                </Button>
+                <Button className={styles.playerModalBtnPrimary} onClick={handleSavePlayer}>
+                  保存修改
+                </Button>
+              </View>
             </ScrollView>
           </View>
         </View>

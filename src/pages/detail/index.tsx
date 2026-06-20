@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, Image, Button, Input, Textarea, ScrollView } from '@tarojs/components';
 import Taro, { useRouter, useDidShow } from '@tarojs/taro';
 import classnames from 'classnames';
@@ -16,6 +16,7 @@ const DetailPage: React.FC = () => {
   const [trip, setTrip] = useState<Trip | null>(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [selectedSlotIndex, setSelectedSlotIndex] = useState(0);
+  const [loadAttempts, setLoadAttempts] = useState(0);
 
   const [applyForm, setApplyForm] = useState<ApplyForm>({
     name: '',
@@ -26,28 +27,51 @@ const DetailPage: React.FC = () => {
     note: ''
   });
 
-  const loadTrip = () => {
+  const loadTrip = useCallback(() => {
     const tripId = router.params.id;
-    if (tripId) {
-      refreshTrips();
-      const foundTrip = getTripById(tripId);
-      if (foundTrip) {
-        setTrip(foundTrip);
-        console.log('[DetailPage] 加载行程:', tripId);
+    if (!tripId) return;
+
+    refreshTrips();
+    const foundTrip = getTripById(tripId);
+    if (foundTrip) {
+      setTrip(foundTrip);
+      setLoadAttempts(0);
+      console.log('[DetailPage] 加载行程成功:', tripId, foundTrip.scriptName);
+    } else {
+      console.warn('[DetailPage] 未找到行程，尝试重试:', tripId, '尝试次数:', loadAttempts + 1);
+      if (loadAttempts < 3) {
+        setLoadAttempts(prev => prev + 1);
+        setTimeout(() => loadTrip(), 100 * (loadAttempts + 1));
       } else {
         Taro.showToast({ title: '行程不存在', icon: 'none' });
+        setTimeout(() => Taro.navigateBack(), 1500);
       }
     }
-  };
+  }, [router.params.id, refreshTrips, getTripById, loadAttempts]);
 
   useEffect(() => {
     loadTrip();
-  }, [router.params.id]);
+  }, [loadTrip]);
 
   useDidShow(() => {
     console.log('[DetailPage] 页面显示，刷新数据');
+    setLoadAttempts(0);
     loadTrip();
   });
+
+  const handleGoEdit = () => {
+    if (!trip) return;
+    Taro.navigateTo({
+      url: `/pages/create/index?id=${trip.id}&mode=edit`
+    });
+  };
+
+  const handleGoManage = () => {
+    if (!trip) return;
+    Taro.navigateTo({
+      url: `/pages/manage/index?id=${trip.id}`
+    });
+  };
 
   const confirmedCount = useMemo(() => {
     return trip?.players.filter(p => p.status === 'confirmed').length || 0;
@@ -113,195 +137,211 @@ const DetailPage: React.FC = () => {
     return '★'.repeat(Math.floor(rating)) + (rating % 1 >= 0.5 ? '☆' : '');
   };
 
-  if (!trip) {
-    return (
-      <View className={styles.page}>
-        <Text>加载中...</Text>
-      </View>
-    );
-  }
-
   return (
     <ScrollView className={styles.page} scrollY>
       {/* 邀约卡 */}
       <View className={styles.invitationSection}>
-        <InvitationCard trip={trip} />
-      </View>
-
-      {/* 场次选择 */}
-      <View className={styles.section}>
-        <Text className={styles.sectionTitle}>
-          <Text className={styles.sectionIcon}>📅</Text>
-          选择场次
-        </Text>
-        <View className={styles.timeSlots}>
-          {trip.timeSlots.map((slot, index) => (
-            <View
-              key={index}
-              className={classnames(styles.timeSlotItem, selectedSlotIndex === index && styles.active)}
-              onClick={() => handleSlotSelect(index)}
-            >
-              <View>
-                <Text className={styles.timeSlotDate}>{formatDate(slot.date)}</Text>
-                <Text className={styles.timeSlotTime}>
-                  {slot.startTime} - {slot.endTime}
-                </Text>
-              </View>
-              <View className={classnames(styles.timeSlotCheck, selectedSlotIndex === index && styles.active)}>
-                {selectedSlotIndex === index ? '✓' : ''}
-              </View>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      {/* 座位情况 */}
-      <View className={styles.section}>
-        <Text className={styles.sectionTitle}>
-          <Text className={styles.sectionIcon}>👥</Text>
-          座位情况
-        </Text>
-        <View className={styles.playersPreview}>
-          <View className={styles.playerAvatars}>
-            {trip.players.slice(0, 5).map(player => (
-              <Image
-                key={player.id}
-                className={styles.playerAvatar}
-                src={player.avatar}
-                mode="aspectFill"
-              />
-            ))}
+        {trip ? (
+          <InvitationCard trip={trip} />
+        ) : (
+          <View className={styles.skeletonCard}>
+            <View className={styles.skeletonText} />
+            <View className={styles.skeletonText} />
+            <View className={styles.skeletonText} />
           </View>
-          <View className={styles.playersText}>
-            已确认 <Text className={styles.playersNum}>{confirmedCount}</Text>/{trip.totalSeats} 人
-          </View>
-        </View>
-        <View className={styles.seatsBar}>
-          <View className={styles.seatsBarFill} style={{ width: `${seatsPercent}%` }} />
-        </View>
+        )}
       </View>
 
-      {/* DM信息 */}
-      <View className={styles.section}>
-        <Text className={styles.sectionTitle}>
-          <Text className={styles.sectionIcon}>🎭</Text>
-          本场DM
-        </Text>
-        <View className={styles.dmSection}>
-          <Image
-            className={styles.dmAvatar}
-            src={trip.dm.avatar}
-            mode="aspectFill"
-          />
-          <View className={styles.dmInfo}>
-            <Text className={styles.dmName}>{trip.dm.name}</Text>
-            <View className={styles.dmStats}>
-              <Text className={styles.dmStat}>
-                ★ <strong>{trip.dm.rating}</strong>
-              </Text>
-              <Text className={styles.dmStat}>
-                带本 <strong>{trip.dm.totalTrips}</strong> 场
-              </Text>
-            </View>
-          </View>
-        </View>
-        <Text className={styles.dmBio}>{trip.dm.bio}</Text>
-      </View>
-
-      {/* 费用说明 */}
-      <View className={styles.section}>
-        <Text className={styles.sectionTitle}>
-          <Text className={styles.sectionIcon}>💰</Text>
-          费用说明
-        </Text>
-        <View className={styles.infoList}>
-          <View className={styles.infoItem}>
-            <Text className={styles.infoLabel}>车费</Text>
-            <Text className={styles.infoValue}>¥{trip.price} /人</Text>
-          </View>
-          <View className={styles.infoItem}>
-            <Text className={styles.infoLabel}>包含</Text>
-            <Text className={styles.infoValue}>{trip.feeNote}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* 适合人群 */}
-      <View className={styles.section}>
-        <Text className={styles.sectionTitle}>
-          <Text className={styles.sectionIcon}>🎯</Text>
-          适合人群
-        </Text>
-        <Text className={styles.infoValue} style={{ lineHeight: 1.8 }}>
-          {trip.suitableFor}
-        </Text>
-      </View>
-
-      {/* 注意事项 */}
-      <View className={styles.section}>
-        <Text className={styles.sectionTitle}>
-          <Text className={styles.sectionIcon}>📝</Text>
-          注意事项
-        </Text>
-        <View className={styles.tipsBox}>
-          <Text className={styles.tipsText}>{trip.notes}</Text>
-        </View>
-      </View>
-
-      {/* 迟到规则 */}
-      <View className={styles.section}>
-        <Text className={styles.sectionTitle}>
-          <Text className={styles.sectionIcon}>⏰</Text>
-          迟到处理规则
-        </Text>
-        <Text className={styles.infoValue} style={{ lineHeight: 1.8 }}>
-          {trip.latePolicy}
-        </Text>
-      </View>
-
-      {/* 通知记录 */}
-      {trip.notifications && trip.notifications.length > 0 && (
-        <View className={styles.section}>
-          <Text className={styles.sectionTitle}>
-            <Text className={styles.sectionIcon}>📢</Text>
-            DM通知
-          </Text>
-          {trip.notifications.map(notification => (
-            <View key={notification.id} className={styles.noticeCard}>
-              <View className={styles.noticeHeader}>
-                <Text className={styles.noticeType}>{notification.typeName}</Text>
-                <Text className={styles.noticeTime}>{notification.sentAt}</Text>
-              </View>
-              <Text className={styles.noticeContent}>{notification.content}</Text>
-            </View>
-          ))}
+      {/* 操作按钮 */}
+      {trip && (
+        <View className={styles.actionBar}>
+          <Button className={styles.actionBarBtn} onClick={handleGoEdit}>
+            ✏️ 编辑邀约
+          </Button>
+          <Button className={classnames(styles.actionBarBtn, styles.primary)} onClick={handleGoManage}>
+            👥 报名管理
+          </Button>
         </View>
       )}
 
-      {/* 玩家评价 */}
-      <View className={styles.section}>
-        <Text className={styles.sectionTitle}>
-          <Text className={styles.sectionIcon}>⭐</Text>
-          玩家评价
-        </Text>
-        {mockReviews.slice(0, 2).map(review => (
-          <View key={review.id} className={styles.reviewCard}>
-            <View className={styles.reviewHeader}>
+      {trip && (
+        <>
+          {/* 场次选择 */}
+          <View className={styles.section}>
+            <Text className={styles.sectionTitle}>
+              <Text className={styles.sectionIcon}>📅</Text>
+              选择场次
+            </Text>
+            <View className={styles.timeSlots}>
+              {trip.timeSlots.map((slot, index) => (
+                <View
+                  key={index}
+                  className={classnames(styles.timeSlotItem, selectedSlotIndex === index && styles.active)}
+                  onClick={() => handleSlotSelect(index)}
+                >
+                  <View>
+                    <Text className={styles.timeSlotDate}>{formatDate(slot.date)}</Text>
+                    <Text className={styles.timeSlotTime}>
+                      {slot.startTime} - {slot.endTime}
+                    </Text>
+                  </View>
+                  <View className={classnames(styles.timeSlotCheck, selectedSlotIndex === index && styles.active)}>
+                    {selectedSlotIndex === index ? '✓' : ''}
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* 座位情况 */}
+          <View className={styles.section}>
+            <Text className={styles.sectionTitle}>
+              <Text className={styles.sectionIcon}>👥</Text>
+              座位情况
+            </Text>
+            <View className={styles.playersPreview}>
+              <View className={styles.playerAvatars}>
+                {trip.players.slice(0, 5).map(player => (
+                  <Image
+                    key={player.id}
+                    className={styles.playerAvatar}
+                    src={player.avatar}
+                    mode="aspectFill"
+                  />
+                ))}
+              </View>
+              <View className={styles.playersText}>
+                已确认 <Text className={styles.playersNum}>{confirmedCount}</Text>/{trip.totalSeats} 人
+              </View>
+            </View>
+            <View className={styles.seatsBar}>
+              <View className={styles.seatsBarFill} style={{ width: `${seatsPercent}%` }} />
+            </View>
+          </View>
+
+          {/* DM信息 */}
+          <View className={styles.section}>
+            <Text className={styles.sectionTitle}>
+              <Text className={styles.sectionIcon}>🎭</Text>
+              本场DM
+            </Text>
+            <View className={styles.dmSection}>
               <Image
-                className={styles.reviewAvatar}
-                src={review.playerAvatar}
+                className={styles.dmAvatar}
+                src={trip.dm.avatar}
                 mode="aspectFill"
               />
-              <Text className={styles.reviewName}>{review.playerName}</Text>
-              <Text className={styles.reviewRating}>
-                {renderStars(review.rating)}
-              </Text>
+              <View className={styles.dmInfo}>
+                <Text className={styles.dmName}>{trip.dm.name}</Text>
+                <View className={styles.dmStats}>
+                  <Text className={styles.dmStat}>
+                    ★ <strong>{trip.dm.rating}</strong>
+                  </Text>
+                  <Text className={styles.dmStat}>
+                    带本 <strong>{trip.dm.totalTrips}</strong> 场
+                  </Text>
+                </View>
+              </View>
             </View>
-            <Text className={styles.reviewContent}>{review.content}</Text>
+            <Text className={styles.dmBio}>{trip.dm.bio}</Text>
           </View>
-        ))}
-        <Text className={styles.viewMore}>查看全部评价 ›</Text>
-      </View>
+
+          {/* 费用说明 */}
+          <View className={styles.section}>
+            <Text className={styles.sectionTitle}>
+              <Text className={styles.sectionIcon}>💰</Text>
+              费用说明
+            </Text>
+            <View className={styles.infoList}>
+              <View className={styles.infoItem}>
+                <Text className={styles.infoLabel}>车费</Text>
+                <Text className={styles.infoValue}>¥{trip.price} /人</Text>
+              </View>
+              <View className={styles.infoItem}>
+                <Text className={styles.infoLabel}>包含</Text>
+                <Text className={styles.infoValue}>{trip.feeNote}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* 适合人群 */}
+          <View className={styles.section}>
+            <Text className={styles.sectionTitle}>
+              <Text className={styles.sectionIcon}>🎯</Text>
+              适合人群
+            </Text>
+            <Text className={styles.infoValue} style={{ lineHeight: 1.8 }}>
+              {trip.suitableFor}
+            </Text>
+          </View>
+
+          {/* 注意事项 */}
+          <View className={styles.section}>
+            <Text className={styles.sectionTitle}>
+              <Text className={styles.sectionIcon}>📝</Text>
+              注意事项
+            </Text>
+            <View className={styles.tipsBox}>
+              <Text className={styles.tipsText}>{trip.notes}</Text>
+            </View>
+          </View>
+
+          {/* 迟到规则 */}
+          <View className={styles.section}>
+            <Text className={styles.sectionTitle}>
+              <Text className={styles.sectionIcon}>⏰</Text>
+              迟到处理规则
+            </Text>
+            <Text className={styles.infoValue} style={{ lineHeight: 1.8 }}>
+              {trip.latePolicy}
+            </Text>
+          </View>
+
+          {/* 通知记录 */}
+          {trip.notifications && trip.notifications.length > 0 && (
+            <View className={styles.section}>
+              <Text className={styles.sectionTitle}>
+                <Text className={styles.sectionIcon}>📢</Text>
+                DM通知
+              </Text>
+              {trip.notifications.map(notification => (
+                <View key={notification.id} className={styles.noticeCard}>
+                  <View className={styles.noticeHeader}>
+                    <Text className={styles.noticeType}>{notification.typeName}</Text>
+                    <Text className={styles.noticeTime}>{notification.sentAt}</Text>
+                  </View>
+                  <Text className={styles.noticeContent}>{notification.content}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* 玩家评价 */}
+          <View className={styles.section}>
+            <Text className={styles.sectionTitle}>
+              <Text className={styles.sectionIcon}>⭐</Text>
+              玩家评价
+            </Text>
+            {mockReviews.slice(0, 2).map(review => (
+              <View key={review.id} className={styles.reviewCard}>
+                <View className={styles.reviewHeader}>
+                  <Image
+                    className={styles.reviewAvatar}
+                    src={review.playerAvatar}
+                    mode="aspectFill"
+                  />
+                  <Text className={styles.reviewName}>{review.playerName}</Text>
+                  <Text className={styles.reviewRating}>
+                    {renderStars(review.rating)}
+                  </Text>
+                </View>
+                <Text className={styles.reviewContent}>{review.content}</Text>
+              </View>
+            ))}
+            <Text className={styles.viewMore}>查看全部评价 ›</Text>
+          </View>
+        </>
+      )}
 
       {/* 底部报名栏 */}
       <View className={styles.bottomBar}>
