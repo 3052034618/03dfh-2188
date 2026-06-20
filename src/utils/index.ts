@@ -1,4 +1,4 @@
-import type { Trip, TimeSlot } from '@/types';
+import type { Trip } from '@/types';
 
 export const formatDate = (dateStr: string): string => {
   if (!dateStr) return '日期待定';

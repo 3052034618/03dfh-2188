@@ -319,8 +319,8 @@
   }
 }
 
-/* 通知弹窗 */
-.notifyModal {
+/* 弹窗通用 */
+.modalMask {
   position: fixed;
   top: 0;
   left: 0;
@@ -332,7 +332,7 @@
   align-items: flex-end;
 }
 
-.notifyContent {
+.modalBody {
   width: 100%;
   background: $color-bg-card;
   border-radius: $radius-xl $radius-xl 0 0;
@@ -340,20 +340,20 @@
   padding-bottom: calc(#{$spacing-xl} + env(safe-area-inset-bottom));
 }
 
-.notifyHeader {
+.modalHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: $spacing-lg;
 }
 
-.notifyTitle {
+.modalTitle {
   font-size: $font-size-xl;
   font-weight: $font-weight-bold;
   color: $color-text-primary;
 }
 
-.notifyClose {
+.modalClose {
   width: 64rpx;
   height: 64rpx;
   border-radius: $radius-round;
@@ -748,6 +748,10 @@
   background: $color-primary-soft;
   padding: 4rpx 12rpx;
   border-radius: $radius-round;
+
+  &:active {
+    opacity: 0.7;
+  }
 }
 
 .notificationActions {
@@ -771,7 +775,6 @@
   }
 }
 
-/* 玩家详情弹窗 */
 .playerModalContent {
   max-height: 70vh;
 }
@@ -933,7 +936,19 @@
   }
 }
 
-/* 底部操作栏调整 */
+.skeletonLine {
+  height: 28rpx;
+  background: linear-gradient(90deg, rgba(255,255,255,0.15) 25%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.15) 75%);
+  background-size: 200% 100%;
+  border-radius: $radius-sm;
+  animation: skeleton-pulse 1.5s infinite;
+}
+
+@keyframes skeleton-pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 .bottomBar {
   .notifyBtn {
     flex: 1;

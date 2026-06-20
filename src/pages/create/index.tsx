@@ -189,7 +189,7 @@ const CreatePage: React.FC = () => {
     };
 
     if (isEdit && editTripId) {
-      const updatedTrip = updateTrip(editTripId, validForm);
+      updateTrip(editTripId, validForm);
       Taro.showToast({ title: '保存成功！', icon: 'success' });
       setTimeout(() => {
         Taro.navigateBack();

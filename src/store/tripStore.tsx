@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, Rea
 import Taro from '@tarojs/taro';
 import type { Trip, Player, CreateTripForm, PlayerStatus, NotificationType, NotificationRecord } from '@/types';
 import { mockTrips, mockDM } from '@/data/mock';
-import { generateId, generateShareCode, formatDate, getNotificationTypeName, getNowTimeString } from '@/utils';
+import { generateId, generateShareCode, getNotificationTypeName, getNowTimeString } from '@/utils';
 
 const STORAGE_KEY = 'dm_trips_data';
 const STORAGE_INIT_FLAG = 'dm_trips_initialized';
@@ -10,7 +10,7 @@ const STORAGE_INIT_FLAG = 'dm_trips_initialized';
 interface TripContextType {
   trips: Trip[];
   isLoading: boolean;
-  refreshTrips: () => void;
+  refreshTrips: () => Trip[];
   createTrip: (form: CreateTripForm) => Trip;
   updateTrip: (tripId: string, updates: Partial<Trip>) => Trip | undefined;
   updatePlayerStatus: (tripId: string, playerId: string, status: PlayerStatus) => Trip | undefined;
@@ -80,10 +80,11 @@ export const TripProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     saveTripsToStorage(newTrips);
   }, []);
 
-  const refreshTrips = useCallback(() => {
+  const refreshTrips = useCallback((): Trip[] => {
     const latestTrips = loadTripsFromStorage();
     setTrips(latestTrips);
     console.log('[TripStore] 刷新数据, 共', latestTrips.length, '个车次');
+    return latestTrips;
   }, []);
 
   const createTrip = useCallback((form: CreateTripForm): Trip => {

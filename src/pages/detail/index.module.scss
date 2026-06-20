@@ -593,8 +593,16 @@
   box-shadow: $shadow-card;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: $spacing-md;
   min-height: 400rpx;
+}
+
+.emptyText {
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+  text-align: center;
 }
 
 .skeletonText {

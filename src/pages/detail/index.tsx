@@ -3,20 +3,19 @@ import { View, Text, Image, Button, Input, Textarea, ScrollView } from '@tarojs/
 import Taro, { useRouter, useDidShow } from '@tarojs/taro';
 import classnames from 'classnames';
 import InvitationCard from '@/components/InvitationCard';
-import Tag from '@/components/Tag';
 import { useTripStore } from '@/store/tripStore';
 import { mockReviews } from '@/data/mock';
-import { formatDate, generateShareContent } from '@/utils';
+import { formatDate } from '@/utils';
 import type { Trip, ApplyForm } from '@/types';
 import styles from './index.module.scss';
 
 const DetailPage: React.FC = () => {
   const router = useRouter();
-  const { getTripById, addPlayer, refreshTrips } = useTripStore();
+  const { addPlayer, refreshTrips } = useTripStore();
   const [trip, setTrip] = useState<Trip | null>(null);
+  const [dataState, setDataState] = useState<'loading' | 'loaded' | 'not_found'>('loading');
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [selectedSlotIndex, setSelectedSlotIndex] = useState(0);
-  const [loadAttempts, setLoadAttempts] = useState(0);
 
   const [applyForm, setApplyForm] = useState<ApplyForm>({
     name: '',
@@ -29,48 +28,38 @@ const DetailPage: React.FC = () => {
 
   const loadTrip = useCallback(() => {
     const tripId = router.params.id;
-    if (!tripId) return;
-
-    refreshTrips();
-    const foundTrip = getTripById(tripId);
-    if (foundTrip) {
-      setTrip(foundTrip);
-      setLoadAttempts(0);
-      console.log('[DetailPage] 加载行程成功:', tripId, foundTrip.scriptName);
+    if (!tripId) { setDataState('not_found'); return; }
+    setDataState('loading');
+    const latestTrips = refreshTrips();
+    const found = latestTrips.find(t => t.id === tripId);
+    if (found) {
+      setTrip(found);
+      setDataState('loaded');
     } else {
-      console.warn('[DetailPage] 未找到行程，尝试重试:', tripId, '尝试次数:', loadAttempts + 1);
-      if (loadAttempts < 3) {
-        setLoadAttempts(prev => prev + 1);
-        setTimeout(() => loadTrip(), 100 * (loadAttempts + 1));
-      } else {
-        Taro.showToast({ title: '行程不存在', icon: 'none' });
-        setTimeout(() => Taro.navigateBack(), 1500);
-      }
+      setTimeout(() => {
+        const retryTrips = refreshTrips();
+        const retry = retryTrips.find(t => t.id === tripId);
+        if (retry) {
+          setTrip(retry);
+          setDataState('loaded');
+        } else {
+          setDataState('not_found');
+        }
+      }, 200);
     }
-  }, [router.params.id, refreshTrips, getTripById, loadAttempts]);
+  }, [router.params.id, refreshTrips]);
 
-  useEffect(() => {
-    loadTrip();
-  }, [loadTrip]);
-
-  useDidShow(() => {
-    console.log('[DetailPage] 页面显示，刷新数据');
-    setLoadAttempts(0);
-    loadTrip();
-  });
+  useEffect(() => { loadTrip(); }, [loadTrip]);
+  useDidShow(() => { loadTrip(); });
 
   const handleGoEdit = () => {
     if (!trip) return;
-    Taro.navigateTo({
-      url: `/pages/create/index?id=${trip.id}&mode=edit`
-    });
+    Taro.navigateTo({ url: `/pages/create/index?id=${trip.id}&mode=edit` });
   };
 
   const handleGoManage = () => {
     if (!trip) return;
-    Taro.navigateTo({
-      url: `/pages/manage/index?id=${trip.id}`
-    });
+    Taro.navigateTo({ url: `/pages/manage/index?id=${trip.id}` });
   };
 
   const confirmedCount = useMemo(() => {
@@ -126,13 +115,6 @@ const DetailPage: React.FC = () => {
     Taro.showToast({ title: '报名成功，等待DM确认', icon: 'success' });
   };
 
-  const getTagType = (tag: string): 'horror' | 'emotion' | 'mechanism' | 'default' => {
-    if (tag === '恐怖') return 'horror';
-    if (tag === '情感' || tag === '欢乐') return 'emotion';
-    if (tag === '机制' || tag === '阵营' || tag === '推理') return 'mechanism';
-    return 'default';
-  };
-
   const renderStars = (rating: number) => {
     return '★'.repeat(Math.floor(rating)) + (rating % 1 >= 0.5 ? '☆' : '');
   };
@@ -143,6 +125,10 @@ const DetailPage: React.FC = () => {
       <View className={styles.invitationSection}>
         {trip ? (
           <InvitationCard trip={trip} />
+        ) : dataState === 'not_found' ? (
+          <View className={styles.skeletonCard}>
+            <Text className={styles.emptyText}>行程不存在或已被删除</Text>
+          </View>
         ) : (
           <View className={styles.skeletonCard}>
             <View className={styles.skeletonText} />
@@ -398,7 +384,7 @@ const DetailPage: React.FC = () => {
             {trip.status === 'full' ? '已满员' : '立即报名'}
           </Button>
         </View>
-      ) : (
+      ) : dataState === 'not_found' ? null : (
         <View className={styles.bottomBar}>
           <View className={styles.skeletonPrice} />
           <View className={styles.skeletonBtn} />
